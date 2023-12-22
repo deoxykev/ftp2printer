@@ -144,6 +144,11 @@ func (driver *Driver) PutFile(ctx *server.Context, destPath string, data io.Read
 
 // PutFile implements Driver
 func (driver *MemoryDriver) PutFile(ctx *server.Context, destPath string, reader io.Reader, offset int64) (int64, error) {
+
+	if !driver.opts.Keepfiles {
+		return driver.onFileUpload(reader)
+	}
+
 	data, pw := io.Pipe()
 	tee := io.TeeReader(reader, pw)
 	go func() {
@@ -154,10 +159,6 @@ func (driver *MemoryDriver) PutFile(ctx *server.Context, destPath string, reader
 		}
 		log.Printf("onFileUpload callback wrote %d bytes\n", n)
 	}()
-
-	if !driver.opts.Keepfiles {
-		return 0, nil
-	}
 
 	rPath := driver.realPath(destPath)
 	var isExist bool
